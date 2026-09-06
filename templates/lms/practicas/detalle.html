@@ -125,3 +125,66 @@ function enviarPractica() {
 }
 </script>
 {% endblock %}
+<!-- Sección de entregas de archivos -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="fas fa-file-upload text-success"></i> Entregar Archivo Adicional
+    </div>
+    <div class="card-body">
+        {% include "lms/entregas/subir.html" with practica=practica %}
+        
+        <hr>
+        
+        <h6><i class="fas fa-history text-primary"></i> Mis entregas</h6>
+        <div id="misEntregas">
+            <div class="text-center text-muted">Cargando entregas...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Cargar entregas del usuario
+function cargarEntregas() {
+    fetch('/api/listar_entregas/?practica_id={{ practica.id }}')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('misEntregas');
+            if (data.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted">No hay entregas para esta práctica</div>';
+                return;
+            }
+            
+            let html = '<div class="list-group">';
+            data.forEach(e => {
+                html += `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${e.titulo}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-file"></i> ${e.extension || 'Sin extensión'}
+                                <i class="fas fa-weight-hanging ms-2"></i> ${e.tamanio_mb} MB
+                                <i class="fas fa-clock ms-2"></i> ${e.fecha}
+                            </small>
+                        </div>
+                        <div>
+                            <span class="badge bg-${e.estado === 'APROBADO' ? 'success' : e.estado === 'RECHAZADO' ? 'danger' : 'secondary'}">
+                                ${e.estado}
+                            </span>
+                            <a href="/api/descargar_entrega/${e.id}/" class="btn btn-sm btn-success ms-2">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            document.getElementById('misEntregas').innerHTML = '<div class="text-center text-danger">Error al cargar entregas</div>';
+        });
+}
+
+cargarEntregas();
+</script>
