@@ -118,15 +118,19 @@ def perfil_view(request):
 def dashboard_estudiante(request):
     """Dashboard del estudiante"""
     user = request.user
+    cursos = Curso.objects.all().order_by('-fecha_creacion')[:6]
     
-    # Obtener estadísticas del usuario
-    # (Aquí puedes agregar lógica para cursos completados, etc.)
+    # Calcular estadísticas
+    total_cursos = Curso.objects.count()
+    total_recursos = RecursoEducativo.objects.count()
     
     context = {
         'user': user,
-        'total_cursos': Curso.objects.count(),
-        'total_recursos': RecursoEducativo.objects.count(),
+        'total_cursos': total_cursos,
+        'total_recursos': total_recursos,
         'cursos_inscritos': 0,  # TODO: Implementar inscripción
         'certificados': 0,  # TODO: Implementar certificados
+        'cursos': cursos,  # Para mostrar en el dashboard
+        'ultimos_cursos': cursos,
     }
     return render(request, 'lms/estudiante/dashboard.html', context)

@@ -13,9 +13,8 @@ from .serializers import (
 def home(request):
     """Vista principal - Dashboard"""
     recursos = RecursoEducativo.objects.all()
-    cursos = Curso.objects.all().order_by('-id')[:10]  # Últimos 10 cursos
+    cursos = Curso.objects.all().order_by('-id')[:10]
     
-    # Calcular estadísticas
     total_recursos = recursos.count()
     total_cursos = cursos.count()
     total_categorias = recursos.values('categoria').distinct().count()
@@ -27,7 +26,7 @@ def home(request):
         'total_cursos': total_cursos,
         'total_categorias': total_categorias,
         'total_mb': total_mb,
-        'cursos': cursos,  # Pasar los cursos al template
+        'cursos': cursos,
         'recursos': recursos,
     }
     return render(request, 'lms/home.html', context)
@@ -44,12 +43,45 @@ def explorar_recursos(request):
     }
     return render(request, 'lms/explorar_recursos.html', context)
 
+def lista_cursos(request):
+    """Vista para listar todos los cursos"""
+    cursos = Curso.objects.all().order_by('-fecha_creacion')
+    
+    # Calcular total de recursos por curso (usando annotate)
+    cursos = cursos.annotate(total_recursos_count=Count('recursos'))
+    
+    context = {
+        'cursos': cursos,
+        'total_cursos': cursos.count(),
+    }
+    return render(request, 'lms/cursos/lista.html', context)
+
 def detalle_curso(request, curso_id):
     """Vista para ver detalle de un curso"""
     curso = get_object_or_404(Curso, id=curso_id)
-    return render(request, 'lms/detalle_curso.html', {'curso': curso})
+    
+    # Obtener recursos del curso
+    recursos = curso.recursos.all()
+    
+    # Intentar obtener lecciones (desde language_practice)
+    try:
+        from apps.language_practice.models import Course, Lesson
+        course_lp = Course.objects.filter(title=curso.titulo).first()
+        lecciones = Lesson.objects.filter(course=course_lp).order_by('order') if course_lp else []
+    except:
+        lecciones = []
+    
+    context = {
+        'curso': curso,
+        'recursos': recursos,
+        'lecciones': lecciones,
+        'total_recursos': recursos.count(),
+        'total_lecciones': len(lecciones),
+    }
+    return render(request, 'lms/cursos/detalle.html', context)
 
 
+# API Views
 class RecursoEducativoViewSet(viewsets.ModelViewSet):
     queryset = RecursoEducativo.objects.all()
     serializer_class = RecursoEducativoSerializer
@@ -105,3 +137,31 @@ class CursoViewSet(viewsets.ModelViewSet):
             'total_cursos': total,
             'cursos_publicados': publicados,
         })
+
+def detalle_practica(request, practica_id):
+    """Vista para ver una práctica interactiva"""
+    from .models import Practica, EjercicioInteractivo
+    
+    practica = get_object_or_404(Practica, id=practica_id, is_active=True)
+    ejercicios = EjercicioInteractivo.objects.filter(practica=practica, is_active=True).order_by('orden')
+    
+    context = {
+        'practica': practica,
+        'ejercicios': ejercicios,
+        'total_ejercicios': ejercicios.count(),
+    }
+    return render(request, 'lms/practicas/detalle.html', context)
+
+def detalle_evaluacion(request, evaluacion_id):
+    """Vista para ver una evaluación"""
+    from .models import Evaluacion, EjercicioInteractivo
+    
+    evaluacion = get_object_or_404(Evaluacion, id=evaluacion_id, is_active=True)
+    ejercicios = EjercicioInteractivo.objects.filter(evaluacion=evaluacion, is_active=True).order_by('orden')
+    
+    context = {
+        'evaluacion': evaluacion,
+        'ejercicios': ejercicios,
+        'total_ejercicios': ejercicios.count(),
+    }
+    return render(request, 'lms/evaluaciones/detalle.html', context)
