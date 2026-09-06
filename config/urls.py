@@ -1,10 +1,20 @@
 from django.contrib import admin
 from django.urls import path, include
-from apps.core.views import home
+from django.http import JsonResponse
+
+def home_api(request):
+    return JsonResponse({
+        "status": "online",
+        "project": "EduNomad API",
+        "endpoints": {
+            "recursos": "/api/recursos/",
+            "cursos": "/api/cursos/",
+            "admin": "/admin/"
+        }
+    })
 
 urlpatterns = [
+    path('', home_api, name='home'),
     path('admin/', admin.site.urls),
-    path('', home, name='home'),
-    path('cursos/', include('apps.language_practice.urls')),
-    path('generator/', include('apps.generator.urls')),
+    path('api/', include('apps.core.urls')),
 ]
