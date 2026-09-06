@@ -17,3 +17,8 @@ env/
 # Archivos de reporte y temporales
 reporte_recursos.html
 *.sh
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+media/
